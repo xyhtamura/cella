@@ -176,12 +176,117 @@ black plate.
 - **Envelope** relabelled to plain **ADSR** (attack/decay/sustain/release);
   still gates the *drive* (the physics identity is kept). Live: slider changes
   post `{type:'adsr'}` to sounding voices.
+- **Chrome/Firefox audio fix (2026-07-04).** Symptom: Firefox produced sound,
+  Chrome did not. Comparing Aliquoto showed the missing safety net: Aliquoto can
+  fall back when `AudioWorklet` fails, while Cella only had the worklet path.
+  Browser repro attempts were noisy (file:// blocked in the in-app browser;
+  localhost automation could not grant real audio activation), but code
+  comparison found the fix. Added a `ScriptProcessorNode` fallback carrying the
+  same resonator DSP, exposed `audioMode/engineReady` on `window.__cella`, and
+  made key input resume audio before starting notes. User verified Chrome audio.
 
-**Still deferred:** spectrum graphic editing (aliquoto selection/override/bake
-port — its own session), chthonic/stonepunk reskin (its own session), external
-drive-buffer input (Horn of Plenty → Fano — step 6), Tabota note model /
-`.tabota` I/O, hex/ribbon surfaces, r(t) dynamics, per-partial ensemble/ADSR.
-`window.__cella` debug hook (voices/AC/rms) left in for verification.
+**Spectrum graphic editing added (2026-07-04, adapts aliquoto phases A–D):**
+- **`OVR` map + `SEL` set** — live override layer over the grammar, keyed by the
+  same stable `pid`s (`s{li}:tuple`, `l{li}`, `a{seq}` for graphic adds).
+  `applyOverrides(parts)` runs inside `applyGrammar` after `buildPartials`,
+  mutating/removing/adding partials; prunes stale pids and SEL each re-eval.
+- **Toolbar** `select · move · add`, `all/none`, `restore` (removed), undo/redo,
+  `⤓ bake`. Selection modes via Shift(=include)/Alt(=exclude).
+- **Plate hit-testing** (cella-specific — aliquoto edits a dot canvas; cella
+  hit-tests the emission lines). `PLATE`/`PLATE_PTS` stashed in `drawPlate`;
+  click-nearest-line to select, drag empty = marquee, selection = ring + axis
+  line, override/added modes get a corner badge.
+- **Move tool** axis-locked drag: x = ratio (log, transpose by factor),
+  y = a_max. **Add tool** click-empty places a mode (x→ratio, y→amp, Q from the
+  Q× default). **Delete/Backspace** removes (added → un-add; grammar-born →
+  `{removed}`), **restore** brings them back.
+- **Override panel** (card under the plate): `ratio · a_max · phase° · Q` +
+  a `Q=∞ sine` button (the chimera flip). Multi-select shows blank on mixed
+  values; blank+Enter drops that override. Number fields, live re-eval.
+- **Selective bake** — modified literal rewrites its line; removed literal
+  deletes it; sum-born modify/remove appends `where !(n==v && k==w)` to that
+  sum (composed with `&&`), modified ones also append a literal under
+  `# — baked overrides —`; adds append as literals; `Q=∞` bakes as `*`.
+  Verified: select→Q override→add→bake→undo, multi-delete → three composed
+  exclusions, move-drag ratio change, mixed-value blanks. All via `window.__cella`
+  edit hooks (`pick/editWrite/editAdd/editDel/editBake/editUndo`).
+- Undo/redo = grammar-text + OVR + SEL snapshots (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y
+  outside text fields).
+
+**Aliquoto-parity pass (2026-07-04, same day):** matched current aliquoto UX.
+- Tools now **select / move / place** — place merges add+delete, driven by the
+  selMode: `+` click = add, `−` click on a line = delete, `replace` = idle
+  (cursor `copy` in + mode).
+- **replace / + / − selMode chips** in the toolbar (persistent state);
+  Shift/Alt still override per-click.
+- **Move = select-then-drag** with keepGroup (replace-click inside an existing
+  multi-selection keeps the group); **y-drag scales the group's amps together**
+  (relative spread preserved, aliquoto semantics — was additive offset),
+  x-drag transposes by common factor. Axis-locked per gesture.
+- **Marquee is a rectangle** (x and y bounds against the line caps) with
+  aliquoto base semantics per mode; works in select and move tools.
+- **Override panel docked in the sidebar** (under the envelope section),
+  shown only when something is selected.
+- Per-tool cursor + plate hint line.
+- **Gesture-shift bugfix (found by test, real on narrow layouts):** in stacked
+  layout the sidebar sits above the plate, so the override card opening/closing
+  at marquee-start shifted the plate under the pointer and corrupted gesture
+  coordinates. Fix: plate rect cached per gesture (`GRC`) **and** the card
+  never toggles while a gesture is active — layout resolves at pointerup.
+  Verified: shallow rect marquee catches exactly the caps in its y-band with
+  the card open pre-gesture.
+
+**Time dynamics added (2026-07-04):** put `t` (seconds since note-on) in a
+mode's **ratio** → swept resonance (`1+0.5*sin(tau*t)`, a vowel/wah); in its
+**Q** → breathing width (`8*(1+9*t)` — starts broad/thuddy, focuses to a tone).
+q(t) is cella-native — aliquoto has no Q so no analog. Design:
+- Both engines (`Cella` worklet + `FallbackCella`) already recomputed poles
+  **per block**; dynamics just re-evaluate `ratio`/`q` at block time there
+  (~2.9 ms grain — fine for LFO/envelope rates, not audio-rate FM). Worklet got
+  a ported mini-compiler (`wcompile`+`WENV`); the fallback uses main-thread
+  `compileExpr`. Partial carries `dyn:{r?,q?}` = `{expr,vars,vals}`, cloned in.
+- Scope: `r(t)` = `[t]`; `q(t)` = `[r,hz,f0,t]` (+ index vars for sum-born).
+  Grammar sum/literal both accept `t`; `initialPos` guards `r(t=0)>0`.
+- Dynamics keep evaluating **through the ring-out** (a struck mode can bend/焦
+  as it decays). Dynamic Q clamped `[.5, 8000]` so q(t) never flips to a true
+  sine mid-note (only static `Q=*` is a sine). Q× multiplier scales dynamic q
+  too (passed to engine).
+- **Override panel** gained `r(t)` / `q(t)` text fields (scope `[t]` /
+  `[r,hz,f0,t]`); dynamic modes show a `~` tilde marker on the plate.
+- **Bake writes dynamics as literal exprs** (better than aliquoto's "kept
+  live"): sum-born index vars are substituted numerically
+  (`n*(1+0.1*t)` @ n=2 → `(2)*(1+0.1*t)`), `t`/`r`/`hz`/`f0` kept live. Verified
+  round-trip: bake → re-resolve keeps the t-dynamic. 2 presets added
+  (Pluck, Formant). Audio verified: r(t) peak swept 234→188 Hz across a cycle;
+  q(t) pluck rms rose 0.16→0.27 as the line narrowed.
+
+**Per-partial drift added (2026-07-04):** ported aliquoto's drift mechanism
+verbatim (per-mode `rnd[k]` static offset + `sin(2π·rate·t+lfo[k])` wander),
+applied as a cents shift on the mode center in both engines' per-block pole loop
+(added to `det[j]`, so all of a mode's ensemble sub-poles shift **together** —
+coherent wander, not smear). New sidebar section **`drift`** = `depth¢` + `rate
+Hz`; distinct from ensemble `spread` (which smears one line into a band). Set at
+note-on like aliquoto. Verified live: at big depth the resonance peak wanders
+281→234 Hz; realistic 5–30¢ is subtly detuned by design ("never quite in tune").
+
+Cella now tracks aliquoto's engine feature-for-feature **plus Q / q(t)** — the
+core thesis holds: *cella = aliquoto with a per-partial filter (Q) bolted on*,
+same grammar, same graphic-edit shell, same drift/dynamics, transferable both ways.
+
+**Roadmap (user-set 2026-07-04):**
+1. **Transfer interfaces** — port aliquoto's **hex (isomorphic)** + **ribbon
+   (log-Hz glide)** surfaces. Cella already has the `startNote/bendNote/stopNote`
+   seam + n-EDO tuning they ride on; should be a near-direct lift.
+2. **Design refinement** — the chthonic/stonepunk reskin (poison cave under a
+   temple that sang from wind). User has been making CSS changes; coordinate.
+
+**Still deferred:** external drive-buffer input (Horn of Plenty → Fano — step 6),
+Tabota note model / `.tabota` I/O, per-partial ensemble/ADSR, move-snapping +
+group ops (scale/transpose/scatter).
+**Idea back to aliquoto:** cella's group-write (multi-select numeric edit) —
+aliquoto disables ratio/a_max on multi-select; cella lets you write all. Port the
+reverse direction when touching aliquoto next.
+`window.__cella` debug + edit hooks (`peakHz` added) left in for verification.
 
 Design record (aesthetic direction + uniqueness analysis) from the 2026-07-03
 naming/architecture session is above and in the git-less session history.
