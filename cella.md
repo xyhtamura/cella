@@ -274,19 +274,90 @@ core thesis holds: *cella = aliquoto with a per-partial filter (Q) bolted on*,
 same grammar, same graphic-edit shell, same drift/dynamics, transferable both ways.
 
 **Roadmap (user-set 2026-07-04):**
-1. **Transfer interfaces** — port aliquoto's **hex (isomorphic)** + **ribbon
-   (log-Hz glide)** surfaces. Cella already has the `startNote/bendNote/stopNote`
-   seam + n-EDO tuning they ride on; should be a near-direct lift.
+1. ~~**Transfer interfaces**~~ — **done** (below).
 2. **Design refinement** — the chthonic/stonepunk reskin (poison cave under a
    temple that sang from wind). User has been making CSS changes; coordinate.
 
+**Interfaces ported (2026-07-04):** hex (isomorphic) + ribbon (continuous glide),
+near-verbatim from aliquoto (`hexAt/drawHex/ribStepAt/drawRibbon` + pointer
+plumbing + `HEXKMAP` QWERTY rows), redrawn in cella's plate palette (active =
+`--line`, the same gold used for the emission-plate core glow — the interface
+literally lights up in the instrument's own color). `SURFACE` toggle
+(piano/hex/ribbon) as `.tchip` buttons next to the "interface" label; per-surface
+extra controls (hex → and ↗ step steppers, ribbon octaves + EDO-snap) in a new
+`#surfCtl` row.
+- **`bendNote` added** — cella had no glide primitive before this (aliquoto's
+  existed, cella's roadmap note claiming otherwise was aspirational). Worklet
+  path ramps the existing `f0` a-rate `AudioParam`; **`FallbackCella` gained a
+  `setf0` message** (`this.f0hint` re-read fresh every `process()` block, so no
+  other change needed there) since `ScriptProcessorNode` has no `AudioParam`.
+  Verified both paths independently: worklet peak swept 188→516 Hz on a drag;
+  fallback (forced via a monkey-patched `AudioWorkletNode`) confirmed via a
+  `setf0`-call counter — message received once, `f0hint` set to the exact
+  dragged frequency (~580 Hz).
+- **Debugging note for future verification sessions:** an early ribbon test
+  read `peakHz()` right after chained high-Q tests in the same page session and
+  saw no movement — a false negative from a **previous test's still-ringing
+  note** (long Q tail) dominating the FFT peak-pick, not a real bug. Isolate
+  audio-timing assertions with a fresh reload + low-Q/short-tail grammar when
+  in doubt.
+- **Headless-preview note:** `requestAnimationFrame` never fires in this
+  preview tool (`document.hidden===true`, matches the known issue already
+  logged in `aliquoto.md`). Switched `setSurface`'s initial hex/ribbon draw
+  from `requestAnimationFrame(drawSurface)` to a **synchronous** call —
+  `display` writes already force layout before `getBoundingClientRect()`, so
+  rAF wasn't needed anyway; this is arguably more correct, not just a
+  workaround. Aliquoto still uses rAF (inside `applyInterfaceSize`, for its
+  half/full resize modes, which cella didn't port) — harmless there, just note
+  the difference if debugging aliquoto's surfaces the same way.
+- Not ported: aliquoto's `iface-half`/`iface-full` resize modes — out of scope
+  for "transfer interfaces," can add later if wanted.
+
+**MIDI file → audio (2026-07-04, the shippable-gate feature):** import a `.mid`,
+audition it live, render it to WAV silently.
+- **Self-contained SMF parser** (`parseMIDI`, no library): MThd/MTrk, format
+  0 & 1 (all tracks merged — monotimbral), VLQ delta-times, **running status**,
+  tempo-meta map (`tick→sec` across tempo changes), note on/off pairing (incl.
+  `0x90 vel 0` = off), channel-msg skipping, sysex/meta skip. Verified: 120 bpm
+  quarters land at 0.5 s, running-status note-on+off, multi-track tempo merge,
+  garbage → `"not a MIDI file"`.
+- **Notes route through the same voice engine** as keys, tuned by
+  `TUNING.toHz` → **EDO-aware** (12 = faithful; other n-EDO = dequantized MIDI,
+  a feature). One shared refactor made this possible: `realizeNote(hz,vel,opts)`
+  is now context-parametric — `{ctx, dest, startAt, relAt, forceWorklet}` — so
+  the identical voice builder serves live keys, scheduled playback, and offline
+  render. Both engines (`Cella`, `FallbackCella`) gained a **self-honored
+  `relAt`** option + a shared `ringTail()` (a scheduled/offline note releases
+  itself at render time — no live `postMessage`, which can't align with an
+  offline render clock).
+- **Live audition** = lookahead scheduler (50 ms tick, 0.25 s horizon) spawning
+  voices with absolute `startAt/relAt`; each self-releases and is disconnected
+  after its tail. `▶ play` / `■ stop` toggle. Bug found + fixed: once all notes
+  are scheduled `playTimer` is nulled but the tail-wait `playEndTimer` is still
+  pending — `midiPlaying()` must count **both**, else "stop" restarts during the
+  ring-out.
+- **Silent export** = `OfflineAudioContext` (44.1 k, stereo, `dur+3 s` tail),
+  worklet re-registered in the offline ctx (`forceWorklet` — SPN can't render
+  offline), every note spawned with absolute times, `startRendering()` →
+  16-bit PCM WAV via `downloadWav` → `<a download>`. Dynamics/drift render
+  correctly offline (worklet `currentTime` advances per quantum). Verified:
+  4-note arp → 5 s buffer, rms 0.158, peak 0.76 (non-silent, no clip), download
+  named `<file>.wav`.
+- **Wanted in aliquoto too** (user): the parser + `downloadWav` + the
+  `OfflineAudioContext` render loop transfer **verbatim**; only the per-note
+  scheduling adapts to aliquoto's additive voice (which already takes `startAt`
+  — it'd need the same `relAt` self-release addition). Do it in an aliquoto
+  session.
+
 **Still deferred:** external drive-buffer input (Horn of Plenty → Fano — step 6),
 Tabota note model / `.tabota` I/O, per-partial ensemble/ADSR, move-snapping +
-group ops (scale/transpose/scatter).
+group ops (scale/transpose/scatter), MIDI pitch-bend/CC (surfaces are
+touch/QWERTY only for glide, same as aliquoto).
 **Idea back to aliquoto:** cella's group-write (multi-select numeric edit) —
 aliquoto disables ratio/a_max on multi-select; cella lets you write all. Port the
 reverse direction when touching aliquoto next.
-`window.__cella` debug + edit hooks (`peakHz` added) left in for verification.
+`window.__cella` debug + edit hooks (`peakHz`, `bendNote`, surface accessors)
+left in for verification.
 
 Design record (aesthetic direction + uniqueness analysis) from the 2026-07-03
 naming/architecture session is above and in the git-less session history.
@@ -300,7 +371,7 @@ naming/architecture session is above and in the git-less session history.
    ring-out release.
 3. Grammar port + Q column + `q :` line; vendor parser, stamp, DEPENDENCIES.md.
 4. Inhomogeneous ensemble (K micro-detuned poles per partial).
-5. Surfaces / tuning: lift from aliquoto (piano / hex / ribbon, n-EDO).
+5. ~~Surfaces / tuning: lift from aliquoto (piano / hex / ribbon, n-EDO).~~ **done.**
 6. Later: external drive buffer input (Horn of Plenty substrate) → Fano.
 
 ## Open questions
