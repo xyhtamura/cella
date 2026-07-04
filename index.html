@@ -1168,9 +1168,9 @@ function drawHex(){ const {x,W,H}=fitSurface(); if(!W||!H)return; x.clearRect(0,
     const step=c*HEX.a+r*HEX.b+HEX.base, pc=((step%edo)+edo)%edo, isRef=pc===0, on=act.has(step);
     HEX.cells.push({cx,cy,R,step});
     x.beginPath(); for(let k=0;k<6;k++){ const a=Math.PI/6+k*Math.PI/3, px=cx+R*Math.cos(a), py=cy-R*Math.sin(a); k?x.lineTo(px,py):x.moveTo(px,py);} x.closePath();
-    x.fillStyle= on?cv("--line"):(isRef?cv("--stone-d"):cv("--plate2")); x.fill();
-    x.lineWidth=1; x.strokeStyle=cv("--edge2"); x.stroke();
-    x.fillStyle= on?cv("--plate"):(isRef?cv("--stone-hi"):cv("--faint")); x.font="10px "+cv("--mono"); x.textAlign="center"; x.textBaseline="middle"; x.fillText(pc,cx,cy); }
+    x.fillStyle= on?cv("--line"):(isRef?cv("--stone-d"):cv("--stone-hi")); x.fill();
+x.lineWidth=1; x.strokeStyle=cv("--stone-d"); x.stroke();
+x.fillStyle= on?cv("--plate"):(isRef?cv("--stone-hi"):cv("--ink")); x.font="10px "+cv("--mono"); x.textAlign="center"; x.textBaseline="middle"; x.fillText(pc,cx,cy); }
 }
 function hexAt(px,py){ let best=null,bd=1e9; for(const c of HEX.cells){ const d=(c.cx-px)**2+(c.cy-py)**2; if(d<bd){bd=d;best=c;} } return (best&&bd<=best.R*best.R)?best:null; }
 /* RIBBON */
@@ -1435,6 +1435,14 @@ const PRESETS={
   "Chimera — struck & rung": `# Q=* is a pure sine (aliquoto); the rest ring on noise\n1 : 1 : 0 : *\n2 : .6 : 0 : *\n2.76 : .5 : 0 : 40\n5.4 : .35 : 0 : 60\n8.93 : .25 : 0 : 120`,
   "Pluck — q(t) narrows": `# breathing width: each mode starts broad (a thud) and focuses into a tone\nsum n=1..6 : n : 1/n : 0 : 8*(1+9*t)`,
   "Formant — r(t) sweep": `# two resonances slide like a vowel morphing\n(1.4+0.5*sin(tau*0.3*t)) : 1 : 0 : 120\n(2.9+0.8*sin(tau*0.21*t)) : .7 : 0 : 90\n1 : .5 : 0 : 30`,
+  "Bell crypt — prime lattice": `# prime-numbered partials folded into a bell frame\nsum n=1..9 : prime(n)/2 : 1/n^.85 : 0 : 90+18*n\nenv : exp(-r/7)`,
+  "Fifth vault — folded stack": `# powers of 3/2 folded into one octave, dry and organ-like\nsum n=0..10 : pow(3/2,n)/pow(2,floor(log(pow(3/2,n))/log(2))) : 1/(n+1)^.7 : 0 : 130`,
+  "Copper sheet — two-axis clang": `# rectangular plate modes: two indices, no harmonic ladder\nsum n=1..5 k=1..5 : sqrt(n*n+k*k)/sqrt(2) : 1/(n*k)^.75 : 0 : 45+8*(n+k) where n<=k`,
+  "Dripstone — falling formants": `# falling resonances; the chamber droops after the strike\n1 : .45 : 0 : 35\n(2.6-0.35*clip01(t/3)) : .8 : 0 : 80\n(4.2-0.6*clip01(t/4)) : .5 : 0 : 120\n(6.8-0.9*clip01(t/5)) : .32 : 0 : 160`,
+  "Octave veil — sine/ring weave": `# alternating pure sine harmonics with noisy resonant odd modes\nsum n=1..12 : n : 1/n : 0 : * where even(n)\nsum n=1..12 : n : 1/n^.9 : 0 : 55 where odd(n)`,
+  "Vowel forge — moving band": `# q(t) moves the narrow band up the harmonic stack\nsum n=1..10 : n : 1/n : 0 : 14+180*exp(-abs(n-(2+5*clip01(t/4))))`,
+  "Trembling ladder — micro-sweep": `# each harmonic wanders by a tiny t-driven ratio bend\nsum n=1..8 : n*(1+0.002*n*sin(tau*(0.03+0.01*n)*t)) : 1/n : 0 : 100`,
+  "Subharmonic choir — low lights": `# low inverse ladder with small upper resonances for vowel color\nsum n=1..8 : 1/n : 1/n^.75 : 0 : 24+4*n\nsum n=1..5 : 2+n*.37 : .28/n : 0 : 70+12*n`,
 };
 function loadPreset(name){ el("grammar").value=PRESETS[name]||""; applyGrammar(); }
 
