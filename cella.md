@@ -90,9 +90,10 @@ Q) and ensemble spread (inhomogeneous). Dirac delta = both zero = sine.
   between overlapping lines) vs independent streams per partial (clean, no
   beating). Physical vs hygienic.
 - **Input port designed now, filled later:** an arbitrary drive buffer is the
-  chimera seam. Horn of Plenty's stationary substrate is the intended first
-  guest (its open questions "grain-vs-consumer crossover" and "spread default"
-  are answered by this consumer — coordinate when wiring).
+  chimera seam. First guest (decided 2026-07-10): a **dropped soundfile** —
+  file rings the room; part of suite arc 1.2 (see `../aliquoto/suite.md`).
+  A stationarized substrate (Horn of Plenty output — it exists as a tool at
+  `../hindcasts/horn-of-plenty/`) is a natural later guest.
 - ADSR gates the drive (see Philosophy). `R` becomes an optional override;
   the natural release is `1/γ` per partial.
 
@@ -113,6 +114,8 @@ q : f(r)                                    # global Q line, env-style
   are in scope.
 - **`Q = ∞`** (notation `q:*` or omitted) = sine partial. This is the chimera
   notation, already present in v1: some lines ring pure, some are driven.
+- **Expression helpers** mirror Aliquoto, including `rnd()` for 0..1 random draws
+  plus `rnd(max)` / `rnd(lo,hi)` for scaled jitter in ratio, amplitude, phase, or Q.
 - **Phase column** is meaningful only at `Q=∞`; a noise-driven partial has no
   phase. Keep the column, ignore it when driven.
 - Second width (inhomogeneous ensemble spread) — column vs `spread :` line:
@@ -373,6 +376,44 @@ naming/architecture session is above and in the git-less session history.
 4. Inhomogeneous ensemble (K micro-detuned poles per partial).
 5. ~~Surfaces / tuning: lift from aliquoto (piano / hex / ribbon, n-EDO).~~ **done.**
 6. Later: external drive buffer input (Horn of Plenty substrate) → Fano.
+
+## Negative lines — anti-resonance (ideation 2026-07-10, unbuilt)
+
+A line that **subtracts**: scoops its frequency region *out* instead of ringing
+it up. Asymmetric to the normal cella pole in kind, not degree — it requires
+sound to be present at all to be heard. Physics name: a **zero**, not a pole.
+
+Two possible builds, very different:
+
+- **(a) Parallel subtract** — a negative-amplitude line sharing the drive.
+  Cancellation happens only where its response is *correlated* with the other
+  lines' — i.e. **common-drive mode only**. In independent-drive mode,
+  subtracting an uncorrelated stream *adds* power: no hole, just more noise.
+  (Record this trap.) May already be latent in today's grammar: negative `a`
+  with common drive ≈ an anti-line — test before building anything.
+- **(b) Series zero** — feed the bank's own output through the anti-resonator:
+  `y = x − k·pole(x)` (feedforward notch). Drive-agnostic, works in both drive
+  modes, and carves *everything* — Lorentzian tails, ensemble bloom, other
+  lines' ring-out. This is the genuinely new entity; (a) is a special effect.
+
+What makes it cella-native rather than "a notch filter bolted on":
+
+- Center is **ratio-defined** → keyfollows at baseline. A static notch is the
+  degenerate case.
+- It can carry the full line vocabulary: `q(n)`, `q(t)`, `rnd()`, drift →
+  breathing, wandering, jittering spectral holes.
+- Entity framing: closer to the **env() family** than the pole family —
+  spectral shaping that keyfollows by design. But stronger than env: `env(r)`
+  scales line amps at build; a zero carves the *realized continuous spectrum*.
+
+Grammar candidates (decide at build): sign on `a` for the parallel form (maybe
+already works); a new line head for the series form, e.g.
+`cut : r : depth : q(n)` — mirrors the pole line, reads as what it does.
+
+Suite echoes: aliquoto already has this as sugar (`env` dip over discrete
+lines); moire needs it most (emergent sidebands unreachable by any env — a
+series zero after the sum is the only sculpting tool); Fano wants both signs
+acting on one substrate. See `../aliquoto/suite.md`.
 
 ## Open questions
 

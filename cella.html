@@ -320,7 +320,7 @@ canvas{ display:block; width:100%; height:100% }
     </div>
     <div class="help">
       <b>partial</b> <code>r : a : p° : Q</code> · <b>sum</b> <code>sum n=1..N : r(n) : a(n) : p(n) : Q(n)</code> · <b>env</b> <code>env : f(r)</code> (scales amp) · <b>q</b> <code>q : f(r)</code> (global width law).<br>
-      <b>Q</b> = quality: high Q = narrow line, rings long; low Q = broad, colored hiss. <code>Q=*</code> (or <code>inf</code>) → a <b>pure sine</b> — this is the chimera notation, some lines ring, some are struck. In scope: <code>r</code> · <code>hz</code>(=r·X) · <code>f0</code>(=X) · index <code>n,k</code>. Fns <code>prime fib rnd sin cos exp log sqrt pow abs mod iff odd even</code> · consts <code>pi e phi tau</code>.<br>
+      <b>Q</b> = quality: high Q = narrow line, rings long; low Q = broad, colored hiss. <code>Q=*</code> (or <code>inf</code>) → a <b>pure sine</b> — this is the chimera notation, some lines ring, some are struck. In scope: <code>r</code> · <code>hz</code>(=r·X) · <code>f0</code>(=X) · index <code>n,k</code>. Fns <code>prime fib sin cos exp log sqrt pow abs mod iff odd even</code> · consts <code>pi e phi tau</code>.<br>
       <b>time</b> — put <code>t</code> (seconds since note-on) in the <b>ratio</b> for a <b>swept resonance</b> (<code>1+0.5*sin(tau*t)</code>) or in <b>Q</b> for a <b>breathing width</b> (<code>20*(1+4*t)</code> — starts broad, narrows). t-modes keep updating through the ring-out.
     </div>
 
@@ -442,8 +442,7 @@ const PRIMES=(()=>{const a=[],lim=4000,s=new Uint8Array(lim).fill(1);
 function prime(n){n=Math.max(1,Math.round(n));return PRIMES[n-1]||PRIMES[PRIMES.length-1];}
 function fib(n){n=Math.max(1,Math.round(n));let a=1,b=1;for(let i=2;i<n;i++)[a,b]=[b,a+b];return b;}
 function clip01(x){return Math.max(0,Math.min(1,isFinite(x)?x:0));}
-function rnd(a,b){if(a==null)return Math.random();if(b==null){b=a;a=0;}return a+Math.random()*(b-a);}
-const MENV={prime,fib,rnd,sin:Math.sin,cos:Math.cos,tan:Math.tan,exp:Math.exp,log:Math.log,
+const MENV={prime,fib,sin:Math.sin,cos:Math.cos,tan:Math.tan,exp:Math.exp,log:Math.log,
   sqrt:Math.sqrt,pow:Math.pow,abs:Math.abs,floor:Math.floor,round:Math.round,sign:Math.sign,
   min:Math.min,max:Math.max,pi:Math.PI,e:Math.E,tau:2*Math.PI,phi:(1+Math.sqrt(5))/2,
   iff:(c,a,b)=>c?a:b, odd:n=>(Math.round(n)%2!==0)?1:0, even:n=>(Math.round(n)%2===0)?1:0,
@@ -546,8 +545,7 @@ function clip01(x){return Math.max(0,Math.min(1,isFinite(x)?x:0));}
 const WP=(()=>{const a=[],lim=4000,s=new Uint8Array(lim).fill(1);for(let i=2;i<lim;i++){if(s[i]){a.push(i);for(let j=i*i;j<lim;j+=i)s[j]=0;}}return a;})();
 function wprime(n){n=Math.max(1,Math.round(n));return WP[n-1]||WP[WP.length-1];}
 function wfib(n){n=Math.max(1,Math.round(n));let a=1,b=1;for(let i=2;i<n;i++){const c=a+b;a=b;b=c;}return b;}
-function rnd(a,b){if(a==null)return Math.random();if(b==null){b=a;a=0;}return a+Math.random()*(b-a);}
-const WENV={prime:wprime,fib:wfib,rnd,sin:Math.sin,cos:Math.cos,tan:Math.tan,exp:Math.exp,log:Math.log,
+const WENV={prime:wprime,fib:wfib,sin:Math.sin,cos:Math.cos,tan:Math.tan,exp:Math.exp,log:Math.log,
   sqrt:Math.sqrt,pow:Math.pow,abs:Math.abs,floor:Math.floor,round:Math.round,sign:Math.sign,
   min:Math.min,max:Math.max,pi:Math.PI,e:Math.E,tau:2*Math.PI,phi:(1+Math.sqrt(5))/2,
   iff:(c,a,b)=>c?a:b, odd:n=>(Math.round(n)%2!==0)?1:0, even:n=>(Math.round(n)%2===0)?1:0,
